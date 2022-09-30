@@ -141,17 +141,21 @@ namespace Libplanet.Net.Messages
         {
             if (message.Remote is BoundPeer peer)
             {
-                if (message.Version.Equals(appProtocolVersion))
-                {
-                    return;
-                }
-
+                var comparer = new AppProtocolVersionExceptExtra();
                 bool trusted = !(
                     trustedAppProtocolVersionSigners is { } tapvs &&
                     tapvs.All(publicKey => !message.Version.Verify(publicKey)));
-                if (trusted && differentAppProtocolVersionEncountered is { } dapve)
+
+                if (
+                    !message.Version.Equals(appProtocolVersion) &&
+                    trusted && differentAppProtocolVersionEncountered is { } dapve)
                 {
                     dapve(peer, message.Version, appProtocolVersion);
+                }
+
+                if (comparer.Equals(message.Version, appProtocolVersion))
+                {
+                    return;
                 }
 
                 throw new DifferentAppProtocolVersionException(
